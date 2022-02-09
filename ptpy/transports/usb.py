@@ -405,6 +405,7 @@ class USBTransport(object):
             try:
                 sent = 0
                 while sent < len(transaction):
+                    print([hex(x) for x in transaction])
                     sent = ep.write(
                         # Up to 64kB
                         transaction[sent:(sent + 64*2**10)]
@@ -418,6 +419,8 @@ class USBTransport(object):
                         (e.errno == 110 or e.errno == 16 or e.errno == 5)
                 ):
                     logger.warning('Ignored USBError {}'.format(e.errno))
+
+                    print(transaction)
                     ep.write(transaction)
 
     def __send_request(self, ptp_container):

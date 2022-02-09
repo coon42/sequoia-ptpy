@@ -43,8 +43,8 @@ class Canon(EOSPropertiesMixin, object):
         # Within a normal PTP session
         with super(Canon, self).session():
             # Set up remote mode and extended event info
-            self.eos_set_remote_mode(1)
-            self.eos_event_mode(1)
+         #   self.eos_set_remote_mode(1)
+         #   self.eos_event_mode(1)
             # And launch a polling thread
             self.__event_queue = Queue()
             self.__eos_event_proc = Thread(
@@ -205,7 +205,7 @@ class Canon(EOSPropertiesMixin, object):
             EOSAfCancel=0x9160,
             EOSFAPIMessageTX=0x91FE,
             EOSFAPIMessageRX=0x91FF,
-            EOSSendCanonMessage=0x9052,
+            EOSExecuteEventProcedure=0x9052,
             EOSProcReturnData=0x9053,
             **product_operations
         )
@@ -709,18 +709,26 @@ class Canon(EOSPropertiesMixin, object):
     def eos_run_command(self, string, params=[]):
         '''Run a prodecure command from DryOS Shell (0x9052)'''
         ptp = Container(
-            OperationCode='EOSSendCanonMessage',
+            OperationCode='EOSExecuteEventProcedure',
             SessionID=self._session,
             TransactionID=self._transaction,
             Parameter=params,
         )
-        
+
+        p0 = bytearray(1)
+        p1 = bytearray(4)
+        p2 = bytearray(4)
+
+        p0[0] = 0
+        p1[0] = 1
+        p2[0] = 2
+
         # I am not entirely sure what this is, but the camera will crash and
         # time out without generous zero padding.
-        ending = bytearray(30)
+        ending = bytearray(20)
 
         # Generate a final command with the ending
-        command = string.encode() + ending
+        command = string.encode() + p0 + p1 + p2 + ending
 
         response = self.send(ptp, command)
         return response
