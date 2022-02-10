@@ -43,8 +43,8 @@ class Canon(EOSPropertiesMixin, object):
         # Within a normal PTP session
         with super(Canon, self).session():
             # Set up remote mode and extended event info
-            self.eos_set_remote_mode(1)
-            self.eos_event_mode(1)
+            #self.eos_set_remote_mode(1)
+            #self.eos_event_mode(1)
             # And launch a polling thread
             self.__event_queue = Queue()
             self.__eos_event_proc = Thread(
@@ -205,8 +205,10 @@ class Canon(EOSPropertiesMixin, object):
             EOSAfCancel=0x9160,
             EOSFAPIMessageTX=0x91FE,
             EOSFAPIMessageRX=0x91FF,
+            EOSInitProc0=0x9050,
             EOSSendCanonMessage=0x9052,
             EOSProcReturnData=0x9053,
+            EOSInitProc1=0x905C,
             **product_operations
         )
 
@@ -706,6 +708,25 @@ class Canon(EOSPropertiesMixin, object):
         response = self.mesg(ptp)
         return response
 
+    def eos_init_command(self, string, params=[]):
+        '''Run a prodecure command from DryOS Shell (0x9052)'''
+        ptp = Container(
+            OperationCode='EOSInitProc1',
+            SessionID=self._session,
+            TransactionID=self._transaction,
+            Parameter=[1,2,3,4,5],
+        )
+
+        # I am not entirely sure what this is, but the camera will crash and
+        # time out without generous zero padding.
+        ending = bytearray(30)
+
+        # Generate a final command with the ending
+        command = string.encode() + ending
+
+        response = self.send(ptp, command)
+        return response
+
     def eos_run_command(self, string, params=[]):
         '''Run a prodecure command from DryOS Shell (0x9052)'''
         ptp = Container(
@@ -714,7 +735,7 @@ class Canon(EOSPropertiesMixin, object):
             TransactionID=self._transaction,
             Parameter=params,
         )
-        
+
         # I am not entirely sure what this is, but the camera will crash and
         # time out without generous zero padding.
         ending = bytearray(30)
